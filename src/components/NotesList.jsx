@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Pin, PinOff, Trash2, Square, CheckSquare } from "lucide-react";
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 export default function NotesList({ notes, onSelect, onDelete, onPin, selectedId, tab, selectedNotes = [], onSelectNote, onSelectAll, onBulkDelete, allSelected }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
 

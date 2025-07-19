@@ -5,8 +5,8 @@ import NoteEditorModal from "./components/NoteEditorModal";
 import NotesList from "./components/NotesList";
 import { Search, Plus, ChevronLeft } from "lucide-react";
 
-// const API = "http://localhost:5000/api/notes";
-const API = "/api/notes";
+const API_URL = "http://localhost:5000/api/notes";
+const API = process.env.REACT_APP_API_URL || API;
 
 
 function App() {
