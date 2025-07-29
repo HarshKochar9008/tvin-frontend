@@ -4,8 +4,9 @@ import StarBorder from "./components/StarBorder";
 import NoteEditorModal from "./components/NoteEditorModal";
 import NotesList from "./components/NotesList";
 import { Search, Plus, ChevronLeft } from "lucide-react";
+import "katex/dist/katex.min.css";
 
-const API = process.env.REACT_APP_API_URL || API;
+const API = process.env.REACT_APP_API_URL;
 
 
 function App() {
