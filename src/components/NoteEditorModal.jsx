@@ -2,8 +2,7 @@ import React from "react";
 import LatexEditor from "./LatexEditor";
 import{  X, Download } from "lucide-react";
 import { BlockMath } from "react-katex";
-import { saveAs } from "file-saver";
-import { toPng } from "html-to-image";
+import "katex/dist/katex.min.css";
 
 export default function NoteEditorModal({
   open,
@@ -16,41 +15,55 @@ export default function NoteEditorModal({
   error,
   isUpdate
 }) {
+  const [editorMode, setEditorMode] = React.useState('math');
   if (!open) return null;
 
   // Download handler for LaTeX preview
   const handleDownload = async () => {
-    // Create a temporary container for BlockMath
-    const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
-    container.style.top = "-9999px";
-    container.style.background = "white";
-    container.style.padding = "32px";
-    container.style.fontSize = "32px";
-    document.body.appendChild(container);
-    // Render BlockMath
-    import("react-dom/client").then(ReactDOM => {
-      const root = ReactDOM.createRoot(container);
-      root.render(
-        <BlockMath math={content} errorColor="#cc0000" />
-      );
-      setTimeout(async () => {
-        try {
-          const dataUrl = await toPng(container, { backgroundColor: "white" });
-          saveAs(dataUrl, `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'note'}.png`);
-        } catch (e) {
-          alert("Failed to export preview for " + title);
+    try {
+      const html2canvas = await import("html2canvas");
+
+      const previewContainer = document.querySelector(".preview-area-for-download");
+
+      if (!previewContainer) {
+        alert("Preview container not found.");
+        return;
+      }
+
+      // Wait for rendering (optional delay just to be safe)
+      await new Promise(res => setTimeout(res, 300));
+
+      const canvas = await html2canvas.default(previewContainer, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true
+      });
+
+      canvas.toBlob(blob => {
+        if (!blob) {
+          alert("Failed to generate image.");
+          return;
         }
-        root.unmount();
-        document.body.removeChild(container);
-      }, 300);
-    });
+
+        const fileName =
+          `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase() || "note"}.png`;
+
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, "image/png");
+
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Download failed. Try refreshing the page.");
+    }
   };
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-[#181A20] rounded-3xl shadow-2xl  sm:px-2 py-4 w-full max-w-[1300px] min-h-[400px] relative flex flex-col border border-gray-700">
-        {/* Header: Title input, actions, close */}
+      <div className="bg-[#181A20] rounded-3xl shadow-2xl sm:px-2 py-2 w-full max-w-[1200px] h-[650px] relative flex flex-col border border-gray-700">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4 sm:gap-8 px-2 pt-2">
           <input
             className="bg-transparent border-0 border-b-2 border-gray-700 focus:border-blue-500 text-gray-100 placeholder-gray-500 py-2 px-2 flex-1 text-2xl font-semibold focus:outline-none transition-all min-w-0 rounded-lg"
@@ -98,9 +111,33 @@ export default function NoteEditorModal({
           </button>
         </div>
         <div className="border-b border-gray-700 mb-6"></div>
+        {/* LaTeX Preview for Download - Hidden */}
+        <div className="preview-area-for-download bg-white p-4 text-black rounded shadow" style={{ position: 'fixed', left: '-9999px', top: '-9999px' }}>
+          {editorMode === 'text' ? (
+            <div className="whitespace-pre-wrap text-black">
+              {content}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {content.split('\n').map((line, index) => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return <div key={index} className="h-4"></div>;
+                
+                return (
+                  <BlockMath 
+                    key={index}
+                    math={trimmedLine} 
+                    errorColor="#cc0000" 
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+        
         {/* Editor/content area */}
-        <div >
-          <LatexEditor value={content} setValue={setContent} />
+        <div className="flex-1 overflow-hidden">
+          <LatexEditor value={content} setValue={setContent} onModeChange={setEditorMode} />
         </div>
         {error && (
           <div className="mb-2 mt-2 text-red-300 font-medium text-sm text-center" role="alert">{error}</div>
